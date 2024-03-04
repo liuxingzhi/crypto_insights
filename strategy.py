@@ -43,7 +43,7 @@ def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.S
         trade_volume = next_holdings - prev_holdings
         abs_trade_usd = abs(trade_volume).dot(abs(prices))
 
-        if abs_trade_usd > 0:
+        if abs_trade_usd / new_balance > 0.1:
             # print("trade it!")
             new_holdings = next_holdings
             commission_fee_incurred = abs_trade_usd * 0.001
