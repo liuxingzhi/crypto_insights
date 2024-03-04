@@ -16,8 +16,8 @@ Warning: Result is highly subjected to overfitting. I'm lazy, I do not want to t
 
 Strategy:
 We re-balance on every day and only trade when the usd trading will be greater than 10 pecent of total money.
-When lower bound and upper bound are 0.85, 1.15 regression gives the best result, which is about 3.5 times of the
-original money
+When lower bound and upper bound are 0.85, 1.15 regression gives the best result, which is about 3 times of the
+original money after a year.
 
 ## Examples
 
