@@ -70,14 +70,14 @@ app.layout = dmc.Container(
                             placeholder="Select all cryptos you like!",
                             id="ratio-range-lower-bound",
                             precision=2,
-                            value=0.6,
+                            value=0.85,
                         ),
                         dmc.NumberInput(
                             label="Input Ratio Range Upper Bound!",
                             placeholder="Select all cryptos you like!",
                             id="ratio-range-upper-bound",
                             precision=2,
-                            value=1.5,
+                            value=1.15,
                         ),
                         dmc.Space(h=60),
                     ],
@@ -182,13 +182,11 @@ def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_
     crypto_2 = crypto_2.upper()
 
     fig = px.line(data_frame=regression_result_df, x="snapshot_time",
-                  # y=["Net Balance"],
                   y=[f"All in {crypto_1}", f"All in {crypto_2}", "Net Balance"],
                   template="simple_white")
     fig.update_layout(
         margin=dict(t=50, l=25, r=25, b=25), yaxis_title="Net Balance", xaxis_title="Date"
     )
-    print("hello??", regression_result_df[["Net Balance"]])
     columns = [{"name": i, "id": i} for i in regression_result_df.columns]
     # return fig
     return fig, columns, regression_result_df.to_dict("records")

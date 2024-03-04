@@ -24,23 +24,46 @@ def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.S
     ideal_position_ratio_df.columns = [f"{crypto_1}_percent", f"{crypto_2}_percent"]
 
     start_position_ratio = ideal_position_ratio_df.iloc[0]
-    start_holdings = new_holdings = starting_balance * start_position_ratio.values / price_df.iloc[0]
+    start_holdings = new_holdings = np.floor(starting_balance * start_position_ratio.values / price_df.iloc[0])
+    cash_unused = starting_balance - start_holdings.dot(price_df.iloc[0])
 
     balances = [starting_balance]
     holdings = [new_holdings]
+    cashes = [cash_unused]
+    commission_fee_rate = 0.001
+    commission_fees = [starting_balance * commission_fee_rate]
+    trade_volumes = []
     for index, ((_, prices), (_, ideal_position_ratios)) in enumerate(
             zip(price_df.iterrows(), ideal_position_ratio_df.iterrows())):
         if index == 0:  # skip first row as that's our starting position
             continue
-        new_balance = prices.dot(new_holdings)
-        new_holdings = new_balance * ideal_position_ratios.values / prices
+        prev_holdings = new_holdings
+        new_balance = prices.dot(prev_holdings) + cash_unused
+        next_holdings = np.floor(new_balance * ideal_position_ratios.values / prices)
+        trade_volume = next_holdings - prev_holdings
+        abs_trade_usd = abs(trade_volume).dot(abs(prices))
+
+        if abs_trade_usd > 0:
+            # print("trade it!")
+            new_holdings = next_holdings
+            commission_fee_incurred = abs_trade_usd * 0.001
+            commission_fees.append(commission_fee_incurred)
+            trade_volumes.append(trade_volume)
+            # print(f"Trade volume: {trade_volume.values}, absolute trade usd: {abs_trade_usd}, commission fee: {commission_fee_incurred}")
+            holdings.append(new_holdings)
+            cashes.append(new_balance - new_holdings.dot(prices))
         balances.append(new_balance)
-        holdings.append(new_holdings)
+
+    trade_volumes_df = pd.DataFrame(trade_volumes)
+    trade_volumes_df.columns = [f"{crypto_1}_trade_volume", f"{crypto_2}_trade_volume"]
     holdings_df = pd.DataFrame(holdings)
     holdings_df.columns = [f"{crypto_1}_holdings", f"{crypto_2}_holdings"]
     result_df = pd.concat([price_df,
                            ideal_position_ratio_df,
                            holdings_df,
+                           trade_volumes_df,
+                           pd.Series(cashes, name='Cash Unused'),
+                           pd.Series(commission_fees, name='Commission Fee Accumulated').cumsum(),
                            pd.Series(balances, name='Net Balance')], axis=1)
 
     result_df[f"All in {crypto_1}"] = (starting_balance / price_df[[crypto_1]].iloc[0]) * price_df[[crypto_1]]
