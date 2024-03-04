@@ -6,53 +6,58 @@ query_crypto = """
 with btc as (select *
              from Crypto
              where symbol = 'BTC'
-               and snapshot_time > '2023-01-01'
+               and snapshot_time > '2022-01-01'
              order by snapshot_time desc, market_cap_rank asc),
      eth as (select *
              from Crypto
              where symbol = 'ETH'
-               and snapshot_time > '2023-01-01'
+               and snapshot_time > '2022-01-01'
              order by snapshot_time desc, market_cap_rank asc),
      stx as (select *
              from Crypto
              where symbol = 'STX'
-               and snapshot_time > '2023-01-01'
+               and snapshot_time > '2022-01-01'
              order by snapshot_time desc, market_cap_rank asc),
      arb as (select *
              from Crypto
              where symbol = 'ARB'
-               and snapshot_time > '2023-01-01'
+               and snapshot_time > '2022-01-01'
              order by snapshot_time desc, market_cap_rank asc),
      matic as (select *
                from Crypto
                where symbol = 'MATIC'
-                 and snapshot_time > '2023-01-01'
+                 and snapshot_time > '2022-01-01'
                order by snapshot_time desc, market_cap_rank asc),
      atom as (select *
               from Crypto
               where symbol = 'ATOM'
-                and snapshot_time > '2023-01-01'
+                and snapshot_time > '2022-01-01'
               order by snapshot_time desc, market_cap_rank asc),
      dot as (select *
              from Crypto
              where symbol = 'DOT'
-               and snapshot_time > '2023-01-01'
+               and snapshot_time > '2022-01-01'
              order by snapshot_time desc, market_cap_rank asc),
      flow as (select *
               from Crypto
               where symbol = 'FLOW'
-                and snapshot_time > '2023-01-01'
+                and snapshot_time > '2022-01-01'
               order by snapshot_time desc, market_cap_rank asc),
      op as (select *
             from Crypto
             where symbol = 'OP'
-              and snapshot_time > '2023-01-01'
+              and snapshot_time > '2022-01-01'
             order by snapshot_time desc, market_cap_rank asc),
      near as (select *
               from Crypto
               where symbol = 'NEAR'
-                and snapshot_time > '2023-01-01'
-              order by snapshot_time desc, market_cap_rank asc)
+                and snapshot_time > '2022-01-01'
+              order by snapshot_time desc, market_cap_rank asc),
+    sol as (select *
+            from Crypto
+            where symbol = 'SOL'
+                and snapshot_time > '2022-01-01')
+        
 
 select btc.snapshot_time    as snapshot_time,
        btc.price_usd        as btc,
@@ -76,7 +81,8 @@ select btc.snapshot_time    as snapshot_time,
        op.price_usd         as op,
        op.price_usd * 3     as op_3x,
        near.price_usd       as near,
-       near.price_usd * 3   as near_3x
+       near.price_usd * 3   as near_3x,
+       sol.price_usd        as sol
 
 from btc
      join eth on btc.snapshot_time = eth.snapshot_time
@@ -87,7 +93,49 @@ from btc
      join dot on btc.snapshot_time = dot.snapshot_time
      join flow on btc.snapshot_time = flow.snapshot_time
      join op on btc.snapshot_time = op.snapshot_time
-     join near on btc.snapshot_time = near.snapshot_time;
+     join near on btc.snapshot_time = near.snapshot_time
+     join sol on btc.snapshot_time = sol.snapshot_time;
 """
 
+#
+# query_crypto = """
+# with btc as (select *
+#              from Crypto
+#              where symbol = 'BTC'
+#                and snapshot_time > '2023-01-23'
+#              order by snapshot_time desc, market_cap_rank asc),
+#      eth as (select *
+#              from Crypto
+#              where symbol = 'ETH'
+#                and snapshot_time > '2023-01-23'
+#              order by snapshot_time desc, market_cap_rank asc),
+#      op as (select *
+#             from Crypto
+#             where symbol = 'OP'
+#               and snapshot_time > '2023-01-23'
+#             order by snapshot_time desc, market_cap_rank asc),
+#      near as (select *
+#               from Crypto
+#               where symbol = 'NEAR'
+#                 and snapshot_time > '2023-01-23'
+#               order by snapshot_time desc, market_cap_rank asc)
+#
+# select btc.snapshot_time    as snapshot_time,
+#        btc.price_usd        as btc,
+#        eth.price_usd        as eth,
+#        eth.price_usd * 15   as eth_15x,
+#        eth.price_usd * 17   as eth_17x,
+#        eth.price_usd * 20   as eth_20x,
+#        op.price_usd         as op,
+#        op.price_usd * 3     as op_3x,
+#        near.price_usd       as near,
+#        near.price_usd * 3   as near_3x
+#
+# from btc
+#      join eth on btc.snapshot_time = eth.snapshot_time
+#      join op on btc.snapshot_time = op.snapshot_time
+#      join near on btc.snapshot_time = near.snapshot_time;
+# """
 crypto_price_df = pd.read_sql(query_crypto, con=con)
+
+

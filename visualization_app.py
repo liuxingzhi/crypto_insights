@@ -1,34 +1,94 @@
-from dash import Dash, dcc, html, Input, Output, dash_table, callback
+from dash import Dash, dcc, html, Input, Output, dash_table, callback, State
 import dash_mantine_components as dmc
 import plotly.express as px
 from data import crypto_price_df
+import sqlite3
+import pandas as pd
+from strategy import run_regression
 
 app = Dash(__name__)
-
 app.layout = dmc.Container(
     [
         dmc.Title(
             "Equity prices", align="center"),
         dmc.Space(h=20),
-        dmc.Button("Download Table Data", id="btn_download_csv"),
+        dmc.Button("Download Table Data", id="download-csv-btn"),
         dcc.Download(id="download-dataframe-csv"),
         dmc.Space(h=10),
         dmc.MultiSelect(
             label="Select crypto!",
             placeholder="Select all cryptos you like!",
             id="crypto-dropdown",
-            # value=["op", "near"],
+            value=["op", "near"],
             data=sorted([{"label": i, "value": i} for i in crypto_price_df.columns[1:]], key=lambda x: x["label"]),
         ),
         dmc.Space(h=60),
         dmc.SimpleGrid(
             [
-                dcc.Graph(id="line_chart"),
+                dcc.Graph(id="crypto-price-line-chart"),
                 dash_table.DataTable(
                     crypto_price_df.to_dict("records"),
                     [{"name": i, "id": i} for i in crypto_price_df.columns],
                     page_size=10,
                     style_table={"overflow-x": "auto"},
+                ),
+                dmc.Title(
+                    "Regression Test", align="center"),
+                dmc.Space(h=20),
+                dmc.SimpleGrid(
+                    [
+                        dmc.Select(
+                            label="Select First Crypto!",
+                            placeholder="Select all cryptos you like!",
+                            id="regression-first-crypto-select",
+                            data=sorted([{"label": i, "value": i} for i in crypto_price_df.columns if
+                                         i != "snapshot_time" and "_" not in i],
+                                        key=lambda x: x["label"]),
+                        ),
+                        dmc.Select(
+                            label="Select Second Crypto!",
+                            placeholder="Select all cryptos you like!",
+                            id="regression-second-crypto-select",
+                            data=sorted([{"label": i, "value": i} for i in crypto_price_df.columns if
+                                         i != "snapshot_time" and "_" not in i],
+                                        key=lambda x: x["label"]),
+                        ),
+                    ],
+                    cols=2
+                ),
+
+                dash_table.DataTable(
+                    page_size=10,
+                    style_table={"overflow-x": "auto"},
+                    id="pre-run-statistics-table",
+                ),
+
+                dmc.SimpleGrid(
+                    [
+                        dmc.NumberInput(
+                            label="Input Ratio Range Lower Bound!",
+                            placeholder="Select all cryptos you like!",
+                            id="ratio-range-lower-bound",
+                            precision=2,
+                            value=0.6,
+                        ),
+                        dmc.NumberInput(
+                            label="Input Ratio Range Upper Bound!",
+                            placeholder="Select all cryptos you like!",
+                            id="ratio-range-upper-bound",
+                            precision=2,
+                            value=1.5,
+                        ),
+                        dmc.Space(h=60),
+                    ],
+                    cols=2
+                ),
+                dmc.Button("Run Regression", id="run-regression-btn"),
+                dcc.Graph(id="regression-result-chart"),
+                dash_table.DataTable(
+                    page_size=10,
+                    style_table={"overflow-x": "auto"},
+                    id="regression-result-table",
                 ),
             ],
         ),
@@ -38,7 +98,9 @@ app.layout = dmc.Container(
 
 
 @callback(
-    Output("line_chart", "figure"),
+    Output("crypto-price-line-chart", "figure"),
+    Output("regression-first-crypto-select", "value"),
+    Output("regression-second-crypto-select", "value"),
     Input("crypto-dropdown", "value"),
 )
 def select_stocks(cryptos_selected):
@@ -46,12 +108,95 @@ def select_stocks(cryptos_selected):
     fig.update_layout(
         margin=dict(t=50, l=25, r=25, b=25), yaxis_title="Price", xaxis_title="Date"
     )
-    return fig
+
+    return (fig,
+            cryptos_selected[0] if len(cryptos_selected) >= 1 else None,
+            cryptos_selected[1] if len(cryptos_selected) >= 2 else None)
+
+
+@callback(
+    Output("pre-run-statistics-table", "columns"),
+    Output("pre-run-statistics-table", "data"),
+    Input("regression-first-crypto-select", "value"),  # 不触发回调，但在回调中使用的State
+    Input("regression-second-crypto-select", "value"),
+    prevent_initial_call=True,
+)
+def calculate_statistics(crypto_1, crypto_2):
+    if not crypto_1 or not crypto_2:
+        return [], []
+    crypto_1 = crypto_1.upper()
+    crypto_2 = crypto_2.upper()
+    con = sqlite3.connect("crypto.db")
+
+    stat_query = f"""
+            with {crypto_1} as (select *
+                        from Crypto
+                        where symbol = '{crypto_1}'),
+                 {crypto_2} as (select *
+                          from Crypto
+                          where symbol = '{crypto_2}'),
+                 price_ratio as (select {crypto_1}.snapshot_time              as snapshot_time,
+                                        {crypto_1}.price_usd / {crypto_2}.price_usd as price_ratio
+                                 from {crypto_1}
+                                      join {crypto_2}
+                                           on {crypto_1}.snapshot_time = {crypto_2}.snapshot_time
+                                 where {crypto_1}.snapshot_time > '2023-01-23'),
+                 aggregated as (select avg(price_ratio)                    as avg_ratio,
+                                       min(price_ratio)                    as min_ratio,
+                                       max(price_ratio)                    as max_ratio,
+                                       max(price_ratio) - min(price_ratio) as ratio_range
+                                from price_ratio)
+            
+            select avg_ratio,
+                   min_ratio,
+                   max_ratio,
+                   ratio_range,
+                   (SELECT COUNT(*) FROM price_ratio WHERE price_ratio > (SELECT avg_ratio FROM Aggregated)) AS count_gt,
+                   (SELECT COUNT(*) FROM price_ratio WHERE price_ratio < (SELECT avg_ratio FROM Aggregated)) AS count_lt
+            from aggregated;
+        """
+    # print(stat_query)
+    stat_df = pd.read_sql(stat_query, con=con)
+    columns = [{"name": i, "id": i} for i in stat_df.columns]
+    return columns, stat_df.to_dict("records")
+
+
+@callback(
+    Output("regression-result-chart", "figure"),
+    Output("regression-result-table", "columns"),
+    Output("regression-result-table", "data"),
+    State("regression-first-crypto-select", "value"),  # 不触发回调，但在回调中使用的State
+    State("regression-second-crypto-select", "value"),
+    State("ratio-range-lower-bound", "value"),
+    State("ratio-range-upper-bound", "value"),
+    Input("run-regression-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_upper_bound, n_clicks):
+    if not crypto_1 or not crypto_2 or not ratio_range_lower_bound or not ratio_range_upper_bound:
+        return {}, [], []
+
+    regression_result_df = run_regression(crypto_1, crypto_2,
+                                          pd.Series([ratio_range_lower_bound, ratio_range_upper_bound]))
+    crypto_1 = crypto_1.upper()
+    crypto_2 = crypto_2.upper()
+
+    fig = px.line(data_frame=regression_result_df, x="snapshot_time",
+                  # y=["Net Balance"],
+                  y=[f"All in {crypto_1}", f"All in {crypto_2}", "Net Balance"],
+                  template="simple_white")
+    fig.update_layout(
+        margin=dict(t=50, l=25, r=25, b=25), yaxis_title="Net Balance", xaxis_title="Date"
+    )
+    print("hello??", regression_result_df[["Net Balance"]])
+    columns = [{"name": i, "id": i} for i in regression_result_df.columns]
+    # return fig
+    return fig, columns, regression_result_df.to_dict("records")
 
 
 @callback(
     Output("download-dataframe-csv", "data"),
-    Input("btn_download_csv", "n_clicks"),
+    Input("download-csv-btn", "n_clicks"),
     prevent_initial_call=True,
 )
 def func(n_clicks):

@@ -13,8 +13,8 @@ def gen_date_list(start, end, step_length_day=30):
 
 headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en"}
 
-for date in gen_date_list(datetime.date(2024, 2, 10),
-                          datetime.date(2024, 3, 1),
+for date in gen_date_list(datetime.date(2022, 1, 1),
+                          datetime.date(2023, 1, 1),
                           1):
     api = f"https://coincodex.com/api/coincodex/get_historical_snapshot/{date}/0/1000"
     r = requests.get(api, headers=headers)
