@@ -32,13 +32,6 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - name: debug stupid env
-      run: |
-        echo ${{vars.OKX_ACCOUNT_TYPE}}
-
-    - name: Print all environment variables
-      run: printenv
-
     - name: Run trading bot
       run: |
         python trading_bot.py --api_key ${{ secrets.OKX_API_KEY }} --secret_key ${{ secrets.OKX_SECRET_KEY }} --passphrase ${{ secrets.OKX_PASSPHRASE }} --account_type  ${{ vars.OKX_ACCOUNT_TYPE }}
