@@ -5,6 +5,17 @@ on:
     # Runs every day at 2:00 AM UTC
     - cron: '0 * * * *'
 
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+      environment:
+        description: 'Environment to run the bot on'
+        required: true
+        default: trading_bot_demo
+
 jobs:
   run-trading-bot:
     runs-on: ubuntu-latest
