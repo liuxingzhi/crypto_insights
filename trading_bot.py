@@ -135,7 +135,7 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
                 stable_coin_count = float(balance_info['availBal'])
         print("reblance finished, new balance: ")
         print(
-            f"{crypto_1}_count: {crypto_1_count}, {crypto_2}_count: {crypto_2_count}, {stable_coin_count}_count: {stable_coin_count}")
+            f"{crypto_1}_count: {crypto_1_count}, {crypto_2}_count: {crypto_2_count}, {stable_coin}_count: {stable_coin_count}")
         print("Ideal holdings reference: ", ideal_holdings.values)
     else:
         print("Less than threshold, No trade, Exit")
