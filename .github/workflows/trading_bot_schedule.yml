@@ -34,7 +34,7 @@ jobs:
 
     - name: Run trading bot
       run: |
-        python trading_bot.py --api_key ${{ secrets.API_KEY }} --secret_key ${{ secrets.SECRET_KEY }} --passphrase ${{ secrets.PASSPHRASE }} --account_type demo
+        python trading_bot.py --api_key ${{ secrets.OKX_API_KEY }} --secret_key ${{ secrets.OKX_SECRET_KEY }} --passphrase ${{ secrets.OKX_PASSPHRASE }} --account_type demo
       env:
         API_KEY: ${{ secrets.API_KEY }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
