@@ -124,6 +124,8 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
             buy_crypto(crypto_1, stable_coin, trade_volume[0] * crypto_1_price - 0.01, account)
             buy_crypto(crypto_2, stable_coin, trade_volume[1] * crypto_2_price - 0.01, account)
 
+        time.sleep(1)
+        coin_balance = account_api.get_account_balance(f'{crypto_1},{crypto_2},{stable_coin}')['data']
         for balance_info in coin_balance[0]['details']:
             if balance_info['ccy'] == crypto_1:
                 crypto_1_count = float(balance_info['availBal'])
@@ -134,6 +136,7 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
         print("reblance finished, new balance: ")
         print(
             f"{crypto_1}_count: {crypto_1_count}, {crypto_2}_count: {crypto_2_count}, {stable_coin_count}_count: {stable_coin_count}")
+        print("Ideal holdings reference: ", ideal_holdings.values)
     else:
         print("Less than threshold, No trade, Exit")
 
