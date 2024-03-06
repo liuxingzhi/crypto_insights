@@ -34,7 +34,10 @@ jobs:
 
     - name: debug stupid env
       run: |
-        echo "Account Type is $OKX_ACCOUNT_TYPE"
+        echo $OKX_ACCOUNT_TYPE
+
+    - name: Print all environment variables
+      run: printenv
 
     - name: Run trading bot
       run: |
