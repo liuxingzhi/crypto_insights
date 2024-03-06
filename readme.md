@@ -10,6 +10,14 @@ Collection of crypto insights and analysis.
 python visualization_app.py
 ```
 
+## Division of functions
+1. Data collection
+   - crawl_market_cap.py 
+2. Data visualization
+   - visualization_app.py
+3. Trading bot
+   - trading_bot.py
+
 ## Analysis
 
 Warning: Result is highly subjected to overfitting. I'm lazy, I do not want to test further. Use at your own risk.

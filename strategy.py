@@ -39,7 +39,7 @@ def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.S
             continue
         prev_holdings = new_holdings
         new_balance = prices.dot(prev_holdings) + cash_unused
-        next_holdings = np.floor(new_balance * ideal_position_ratios.values / prices)
+        next_holdings = new_balance * ideal_position_ratios.values / prices
         trade_volume = next_holdings - prev_holdings
         abs_trade_usd = abs(trade_volume).dot(abs(prices))
 

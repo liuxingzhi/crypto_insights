@@ -2,3 +2,4 @@ cal_income.py
 .venv
 .idea
 __pycache__
+local_secret_reference.txt
