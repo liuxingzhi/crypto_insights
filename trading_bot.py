@@ -27,7 +27,6 @@ trading_account = {
     "account_type": "0" if args.account_type == "prod" else "1"
 }
 
-print(trading_account)
 
 def place_market_order(crypto, stable_coin, side, sz, account):
     trade_api = Trade.TradeAPI(account['api_key'], account['secret_key'], account['passphrase'], False,

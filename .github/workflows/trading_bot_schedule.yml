@@ -2,7 +2,6 @@ name: Trading Bot Schedule
 
 on:
   schedule:
-    # Runs every day at 2:00 AM UTC
     - cron: '* * * * *'
 
   workflow_dispatch:
