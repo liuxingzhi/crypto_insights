@@ -77,11 +77,11 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
     public_data_api = PublicData.PublicAPI(flag=account['account_type'], debug=False)
     crypto_1_price = float(public_data_api.get_mark_price(
         'SWAP',
-        instId=f"{crypto_1}-{stable_coin}-SWAP",
+        instId=f"{crypto_1}-USDT-SWAP",  # USDC data often not available, so always use USDT
     )['data'][0]['markPx'])
     crypto_2_price = float(public_data_api.get_mark_price(
         'SWAP',
-        instId=f"{crypto_2}-{stable_coin}-SWAP",
+        instId=f"{crypto_2}-USDT-SWAP",
     )['data'][0]['markPx'])
 
     print(f"{crypto_1}_price: {crypto_1_price}, {crypto_2}_price: {crypto_2_price}")
