@@ -18,7 +18,7 @@ on:
 jobs:
   run-trading-bot:
     runs-on: ubuntu-latest
-    environment: trading_bot_demo
+    environment: trading_bot_prod
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
