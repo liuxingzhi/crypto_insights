@@ -13,8 +13,8 @@ def gen_date_list(start, end, step_length_day=30):
 
 headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en"}
 
-for date in gen_date_list(datetime.date(2024, 2, 15),
-                          datetime.date(2024, 3, 7),
+for date in gen_date_list(datetime.date(2014, 1, 1),
+                          datetime.date(2018, 1, 1),
                           1):
     api = f"https://coincodex.com/api/coincodex/get_historical_snapshot/{date}/0/1000"
     r = requests.get(api, headers=headers)
@@ -33,4 +33,5 @@ for date in gen_date_list(datetime.date(2024, 2, 15),
     except Exception as e:
         print(e)
         print(r.text)
-cursor.close()
+    finally:
+        cursor.close()

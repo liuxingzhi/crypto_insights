@@ -5,6 +5,7 @@ from data import crypto_price_df
 import sqlite3
 import pandas as pd
 from strategy import run_regression
+from datetime import datetime, timedelta, date
 
 app = Dash(__name__)
 app.layout = dmc.Container(
@@ -19,7 +20,7 @@ app.layout = dmc.Container(
             label="Select crypto!",
             placeholder="Select all cryptos you like!",
             id="crypto-dropdown",
-            value=["op", "near"],
+            value=[crypto_name for crypto_name in crypto_price_df.columns if crypto_name != "snapshot_time"][:2],
             data=sorted([{"label": i, "value": i} for i in crypto_price_df.columns[1:]], key=lambda x: x["label"]),
         ),
         dmc.Space(h=60),
@@ -53,6 +54,19 @@ app.layout = dmc.Container(
                                          i != "snapshot_time" and "_" not in i],
                                         key=lambda x: x["label"]),
                         ),
+                        dmc.TextInput(
+                            label="start date",
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD",
+                            id="stat-start-date-input",
+                            value="2022-01-01"
+                        ),
+                        dmc.TextInput(
+                            label="end date",
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD",
+                            id="stat-end-date-input",
+                            value=datetime.now().strftime("%Y-%m-%d")
+                        ),
+                        dmc.Space(h=10),
                     ],
                     cols=2
                 ),
@@ -78,6 +92,18 @@ app.layout = dmc.Container(
                             id="ratio-range-upper-bound",
                             precision=2,
                             value=1.15,
+                        ),
+                        dmc.TextInput(
+                            label="start date",
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD",
+                            id="regression-start-date-input",
+                            value="2022-01-01"
+                        ),
+                        dmc.TextInput(
+                            label="end date",
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD",
+                            id="regression-end-date-input",
+                            value=datetime.now().strftime("%Y-%m-%d")
                         ),
                         dmc.NumberInput(
                             label="exchange threshold",
@@ -110,7 +136,7 @@ app.layout = dmc.Container(
     Output("regression-second-crypto-select", "value"),
     Input("crypto-dropdown", "value"),
 )
-def select_stocks(cryptos_selected):
+def select_cryptos(cryptos_selected):
     fig = px.line(data_frame=crypto_price_df, x="snapshot_time", y=cryptos_selected, template="simple_white")
     fig.update_layout(
         margin=dict(t=50, l=25, r=25, b=25), yaxis_title="Price", xaxis_title="Date"
@@ -124,13 +150,18 @@ def select_stocks(cryptos_selected):
 @callback(
     Output("pre-run-statistics-table", "columns"),
     Output("pre-run-statistics-table", "data"),
+    Output("ratio-range-lower-bound", "value"),
+    Output("ratio-range-upper-bound", "value"),
     Input("regression-first-crypto-select", "value"),  # 不触发回调，但在回调中使用的State
     Input("regression-second-crypto-select", "value"),
+    Input("stat-start-date-input", "value"),
+    Input("stat-end-date-input", "value"),
     prevent_initial_call=True,
 )
-def calculate_statistics(crypto_1, crypto_2):
-    if not crypto_1 or not crypto_2:
+def calculate_statistics(crypto_1, crypto_2, start_date, end_date):
+    if not crypto_1 or not crypto_2 or not start_date or not end_date:
         return [], []
+
     crypto_1 = crypto_1.upper()
     crypto_2 = crypto_2.upper()
     con = sqlite3.connect("crypto.db")
@@ -147,7 +178,7 @@ def calculate_statistics(crypto_1, crypto_2):
                                  from {crypto_1}
                                       join {crypto_2}
                                            on {crypto_1}.snapshot_time = {crypto_2}.snapshot_time
-                                 where {crypto_1}.snapshot_time > '2023-01-23'),
+                                 where {crypto_1}.snapshot_time >= '{start_date}' and {crypto_1}.snapshot_time <= '{end_date}'),
                  aggregated as (select avg(price_ratio)                    as avg_ratio,
                                        min(price_ratio)                    as min_ratio,
                                        max(price_ratio)                    as max_ratio,
@@ -165,7 +196,7 @@ def calculate_statistics(crypto_1, crypto_2):
     # print(stat_query)
     stat_df = pd.read_sql(stat_query, con=con)
     columns = [{"name": i, "id": i} for i in stat_df.columns]
-    return columns, stat_df.to_dict("records")
+    return columns, stat_df.to_dict("records"), stat_df["min_ratio"].iloc[0], stat_df["max_ratio"].iloc[0]
 
 
 @callback(
@@ -176,16 +207,21 @@ def calculate_statistics(crypto_1, crypto_2):
     State("regression-second-crypto-select", "value"),
     State("ratio-range-lower-bound", "value"),
     State("ratio-range-upper-bound", "value"),
+    State("regression-start-date-input", "value"),
+    State("regression-end-date-input", "value"),
     State("exchange-ratio-threshold", "value"),
     Input("run-regression-btn", "n_clicks"),
     prevent_initial_call=True,
 )
-def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_upper_bound, exchange_ratio_threshold, n_clicks):
+def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_upper_bound, regression_start_date,
+                       regression_end_date, exchange_ratio_threshold, n_clicks):
     if not crypto_1 or not crypto_2 or not ratio_range_lower_bound or not ratio_range_upper_bound:
         return {}, [], []
 
     regression_result_df = run_regression(crypto_1, crypto_2,
-                                          pd.Series([ratio_range_lower_bound, ratio_range_upper_bound]), exchange_ratio_threshold=exchange_ratio_threshold)
+                                          pd.Series([ratio_range_lower_bound, ratio_range_upper_bound]),
+                                          regression_start_date, regression_end_date,
+                                          exchange_ratio_threshold=exchange_ratio_threshold)
     crypto_1 = crypto_1.upper()
     crypto_2 = crypto_2.upper()
 
