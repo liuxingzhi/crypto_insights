@@ -3,3 +3,4 @@ cal_income.py
 .idea
 __pycache__
 local_secret_reference.txt
+crypto.db
