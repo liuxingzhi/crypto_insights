@@ -54,7 +54,7 @@ def buy_crypto(crypto, stable_coin, usd_amount, account):
     place_market_order(crypto, stable_coin, "buy", usd_amount, account)
 
 
-def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict, threshold=0.12):
+def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict, exchange_ratio_threshold=0.12):
     account_api = Account.AccountAPI(account['api_key'], account['secret_key'], account['passphrase'], False,
                                      account['account_type'], debug=False)
 
@@ -100,7 +100,7 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
     print("Trade volume: ", trade_volume.values)
     abs_trade_stable_coin_value = abs(trade_volume).dot(abs(current_prices))
 
-    trade_threshold = threshold * current_balance
+    trade_threshold = exchange_ratio_threshold * current_balance
     print(f"{abs_trade_stable_coin_value=}, {trade_threshold=}, {current_balance=}")
 
     if abs_trade_stable_coin_value > trade_threshold:
@@ -141,5 +141,5 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
         print("Less than threshold, No trade, Exit")
 
 
-rebalance("NEAR", "OP", "USDT", pd.Series([0.85, 1.15]), trading_account)
+rebalance("NEAR", "OP", "USDT", pd.Series([0.85, 1.15]), trading_account, exchange_ratio_threshold=0.45)
 # add more crypto pairs here

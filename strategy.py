@@ -17,7 +17,7 @@ def calculate_ideal_position(c1_price: float, c2_price: float, ratio_range_bound
 
 
 def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.Series,
-                                starting_balance=10000) -> pd.DataFrame:
+                                starting_balance=10000, exchange_ratio_threshold=0.6) -> pd.DataFrame:
     ideal_position_ratio_df = price_df.apply(
         lambda row: calculate_ideal_position(row.iloc[0], row.iloc[1], ratio_range_bounds), axis=1)
     crypto_1, crypto_2 = price_df.columns
@@ -43,7 +43,7 @@ def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.S
         trade_volume = next_holdings - prev_holdings
         abs_trade_usd = abs(trade_volume).dot(abs(prices))
 
-        if abs_trade_usd / new_balance > 0.1:
+        if abs_trade_usd / new_balance > exchange_ratio_threshold:
             # print("trade it!")
             new_holdings = next_holdings
             commission_fee_incurred = abs_trade_usd * 0.001
@@ -71,7 +71,8 @@ def coin_pair_exchange_strategy(price_df: pd.DataFrame, ratio_range_bounds: pd.S
     return result_df
 
 
-def run_regression(crypto_1: str, crypto_2: str, price_range_bounds: pd.Series, starting_balance=10000) -> pd.DataFrame:
+def run_regression(crypto_1: str, crypto_2: str, price_range_bounds: pd.Series, starting_balance=10000,
+                   exchange_ratio_threshold=0.1) -> pd.DataFrame:
     crypto_1 = crypto_1.upper()
     crypto_2 = crypto_2.upper()
     con = sqlite3.connect("crypto.db")
@@ -94,7 +95,8 @@ def run_regression(crypto_1: str, crypto_2: str, price_range_bounds: pd.Series, 
     # print(time_series_df)
     regression_result_df = coin_pair_exchange_strategy(time_series_df[[crypto_1, crypto_2]],
                                                        price_range_bounds,
-                                                       starting_balance=starting_balance)
+                                                       starting_balance=starting_balance,
+                                                       exchange_ratio_threshold=exchange_ratio_threshold)
     return pd.concat([regression_result_df, time_series_df['snapshot_time']], axis=1)
 
 

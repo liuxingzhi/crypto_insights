@@ -79,6 +79,13 @@ app.layout = dmc.Container(
                             precision=2,
                             value=1.15,
                         ),
+                        dmc.NumberInput(
+                            label="exchange threshold",
+                            placeholder="from 0.1 to 1",
+                            id="exchange-ratio-threshold",
+                            precision=2,
+                            value=0.5,
+                        ),
                         dmc.Space(h=60),
                     ],
                     cols=2
@@ -169,15 +176,16 @@ def calculate_statistics(crypto_1, crypto_2):
     State("regression-second-crypto-select", "value"),
     State("ratio-range-lower-bound", "value"),
     State("ratio-range-upper-bound", "value"),
+    State("exchange-ratio-threshold", "value"),
     Input("run-regression-btn", "n_clicks"),
     prevent_initial_call=True,
 )
-def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_upper_bound, n_clicks):
+def regression_handler(crypto_1, crypto_2, ratio_range_lower_bound, ratio_range_upper_bound, exchange_ratio_threshold, n_clicks):
     if not crypto_1 or not crypto_2 or not ratio_range_lower_bound or not ratio_range_upper_bound:
         return {}, [], []
 
     regression_result_df = run_regression(crypto_1, crypto_2,
-                                          pd.Series([ratio_range_lower_bound, ratio_range_upper_bound]))
+                                          pd.Series([ratio_range_lower_bound, ratio_range_upper_bound]), exchange_ratio_threshold=exchange_ratio_threshold)
     crypto_1 = crypto_1.upper()
     crypto_2 = crypto_2.upper()
 
