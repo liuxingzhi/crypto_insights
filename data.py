@@ -64,6 +64,14 @@ with btc as (select *
     avax as (select *
             from Crypto
             where symbol = 'AVAX'
+                and snapshot_time > '2022-01-01'),
+    doge as (select *
+            from Crypto
+            where symbol = 'DOGE'
+                and snapshot_time > '2022-01-01'),
+    astr as (select *
+            from Crypto
+            where symbol = 'ASTR'
                 and snapshot_time > '2022-01-01')
         
 
@@ -94,7 +102,9 @@ select btc.snapshot_time    as snapshot_time,
        sol.price_usd        as sol,
        ksm.price_usd        as ksm,
        avax.price_usd       as avax,
-       avax.price_usd * 3   as avax_3x
+       avax.price_usd * 3   as avax_3x,
+       doge.price_usd       as doge,
+       astr.price_usd       as astr
 
 from btc
      join eth on btc.snapshot_time = eth.snapshot_time
@@ -108,31 +118,33 @@ from btc
      join near on btc.snapshot_time = near.snapshot_time
      join sol on btc.snapshot_time = sol.snapshot_time
      join ksm on btc.snapshot_time = ksm.snapshot_time
-     join avax on btc.snapshot_time = avax.snapshot_time;
+     join avax on btc.snapshot_time = avax.snapshot_time
+     join doge on btc.snapshot_time = doge.snapshot_time
+     join astr on btc.snapshot_time = astr.snapshot_time;
 """
 
 #
-query_crypto = """
-with btc as (select *
-             from Crypto
-             where symbol = 'BTC'
-             order by snapshot_time desc, market_cap_rank asc),
-     eth as (select *
-             from Crypto
-             where symbol = 'ETH'
-             order by snapshot_time desc, market_cap_rank asc)
-
-select btc.snapshot_time    as snapshot_time,
-       btc.price_usd        as btc,
-       eth.price_usd        as eth,
-       eth.price_usd * 15   as eth_15x,
-       eth.price_usd * 17   as eth_17x,
-       eth.price_usd * 20   as eth_20x
-
-from btc
-     join eth on btc.snapshot_time = eth.snapshot_time
-     where btc.snapshot_time > '2018-01-01'
-"""
+# query_crypto = """
+# with btc as (select *
+#              from Crypto
+#              where symbol = 'BTC'
+#              order by snapshot_time desc, market_cap_rank asc),
+#      eth as (select *
+#              from Crypto
+#              where symbol = 'ETH'
+#              order by snapshot_time desc, market_cap_rank asc)
+#
+# select btc.snapshot_time    as snapshot_time,
+#        btc.price_usd        as btc,
+#        eth.price_usd        as eth,
+#        eth.price_usd * 15   as eth_15x,
+#        eth.price_usd * 17   as eth_17x,
+#        eth.price_usd * 20   as eth_20x
+#
+# from btc
+#      join eth on btc.snapshot_time = eth.snapshot_time
+#      where btc.snapshot_time > '2018-01-01'
+# """
 crypto_price_df = pd.read_sql(query_crypto, con=con)
 
 

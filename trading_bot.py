@@ -63,6 +63,7 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
     crypto_1_count = 0.0
     crypto_2_count = 0.0
     stable_coin_count = 0.0
+    print(coin_balance[0]['details'])
     for balance_info in coin_balance[0]['details']:
         if balance_info['ccy'] == crypto_1:
             crypto_1_count = float(balance_info['availBal'])
@@ -72,17 +73,11 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
             stable_coin_count = float(balance_info['availBal'])
 
     print(
-        f"{crypto_1}_count: {crypto_1_count}, {crypto_2}_count: {crypto_2_count}, {stable_coin_count}_count: {stable_coin_count}")
+        f"{crypto_1}_count: {crypto_1_count}, {crypto_2}_count: {crypto_2_count}, {stable_coin}_count: {stable_coin_count}")
 
-    public_data_api = PublicData.PublicAPI(flag=account['account_type'], debug=False)
-    crypto_1_price = float(public_data_api.get_mark_price(
-        'SWAP',
-        instId=f"{crypto_1}-USDT-SWAP",  # USDC data often not available, so always use USDT
-    )['data'][0]['markPx'])
-    crypto_2_price = float(public_data_api.get_mark_price(
-        'SWAP',
-        instId=f"{crypto_2}-USDT-SWAP",
-    )['data'][0]['markPx'])
+    market_data_api = MarketData.MarketAPI(flag=account['account_type'], debug=False)
+    crypto_1_price = float(market_data_api.get_ticker(f"{crypto_1}-{stable_coin}")['data'][0]['last'])
+    crypto_2_price = float(market_data_api.get_ticker(f"{crypto_2}-{stable_coin}")['data'][0]['last'])
 
     print(f"{crypto_1}_price: {crypto_1_price}, {crypto_2}_price: {crypto_2_price}")
 
@@ -105,21 +100,21 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
 
     if abs_trade_stable_coin_value > trade_threshold:
         print("Greater than threshold, Do the trade")
-        print(f"{trade_volume.values=}")
+        print(f"expected trading: {trade_volume.values=}")
 
-        if trade_volume[0] < 0 < trade_volume[1]:
+        if trade_volume[0] <= 0 <= trade_volume[1]:
             print(f"Selling {crypto_1} and buying {crypto_2}")
             sell_crypto(crypto_1, stable_coin, trade_volume[0], account)
             stable_coin_balance = float(
                 account_api.get_account_balance(stable_coin)['data'][0]['details'][0]['availBal'])
             buy_crypto(crypto_2, stable_coin, stable_coin_balance - 0.01, account)
-        elif trade_volume[0] > 0 > trade_volume[1]:
+        elif trade_volume[0] >= 0 >= trade_volume[1]:
             print(f"Selling {crypto_2} and buying {crypto_1}")
             sell_crypto(crypto_2, stable_coin, trade_volume[1], account)
             stable_coin_balance = float(
                 account_api.get_account_balance(stable_coin)['data'][0]['details'][0]['availBal'])
             buy_crypto(crypto_1, stable_coin, stable_coin_balance - 0.01, account)
-        elif trade_volume[0] > 0 and trade_volume[1] > 0:
+        elif trade_volume[0] >= 0 and trade_volume[1] >= 0:
             print(f"Buying {crypto_1} and {crypto_2}")
             buy_crypto(crypto_1, stable_coin, trade_volume[0] * crypto_1_price - 0.01, account)
             buy_crypto(crypto_2, stable_coin, trade_volume[1] * crypto_2_price - 0.01, account)
@@ -142,4 +137,5 @@ def rebalance(crypto_1, crypto_2, stable_coin, price_ratio_bounds, account: dict
 
 
 rebalance("NEAR", "OP", "USDT", pd.Series([0.85, 1.15]), trading_account, exchange_ratio_threshold=0.45)
+rebalance("DOGE", "ASTR", "USDC", pd.Series([0.5, 2]), trading_account, exchange_ratio_threshold=0.6)
 # add more crypto pairs here

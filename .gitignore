@@ -4,3 +4,4 @@ cal_income.py
 __pycache__
 local_secret_reference.txt
 crypto.db
+tmp*.json
